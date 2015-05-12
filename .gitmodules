@@ -1,0 +1,3 @@
+[submodule "ext/serhex"]
+	path = ext/serhex
+	url = git://github.com/radiusnetworks/serhex
