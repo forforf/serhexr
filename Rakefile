@@ -1,6 +1,7 @@
 
 task :build do
   `make -C ./ext/serhex`
+  `cp ./ext/serhex/lib/* ./lib/extlib/serhexr/lib/`
 end
 
 task :clean do

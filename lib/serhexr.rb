@@ -1,14 +1,7 @@
 require 'ffi'
 
-SERHEX_LIB_PATH = File.join(File.dirname(__FILE__), '../ext/serhex')
-SERHEX_SO_PATH = File.join(SERHEX_LIB_PATH, 'lib/libserhex.so')
-
-unless File.exist?(SERHEX_SO_PATH)
-  `make -C #{SERHEX_LIB_PATH}`
-  unless File.exist?(SERHEX_SO_PATH)
-    raise IOError, "Unable to find or make #{SERHEX_SO_PATH}"
-  end
-end
+ROOT_PATH = File.expand_path( File.dirname(__FILE__) + '/..')
+SERHEX_SO_PATH = File.expand_path(ROOT_PATH + '/lib/extlib/serhexr/lib/libserhex.so')
 
 module Serhexr
   extend FFI::Library

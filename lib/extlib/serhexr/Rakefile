@@ -1,0 +1,15 @@
+
+ROOT_DIR           = File.expand_path(File.dirname(__FILE__) + '/../../..')
+MAKE_DIR           = ROOT_DIR + '/ext/serhex'
+SHARED_LIB_SRC_DIR = MAKE_DIR + '/lib'
+SHARED_LIB_OUT_DIR = ROOT_DIR + '/lib/extlib/serhexr/lib'
+
+
+task :default do
+  puts "Building native library"
+  `make -C #{MAKE_DIR}`
+  `cp #{SHARED_LIB_SRC_DIR}/* #{SHARED_LIB_OUT_DIR}/`
+  unless File.exist?( "#{SHARED_LIB_OUT_DIR}/libserhex.so")
+    raise ScriptError, "Shared Library not found in #{SHARED_LIB_OUT_DIR}"
+  end
+end

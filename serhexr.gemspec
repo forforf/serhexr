@@ -17,8 +17,11 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rspec", "~>3.2"
 
   s.files         = `git ls-files`.split("\n")
+  s.files         += Dir['ext/serhex/**/*']
+  s.files         += Dir['lib/extlib/**/*']
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
+  s.extensions    = 'lib/extlib/serhexr/Rakefile'
 
 end
