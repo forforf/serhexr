@@ -3,20 +3,18 @@ require 'serhexr/hexdump'
 
 module Serhexr
   class Port
-    RESP_LEN = 80  #maximum response size
-    # Log levels, :error, :warn, :info, :debug
 
-    attr_accessor :port
+    attr_accessor :port, :max_response_length
 
     def initialize(port, options={})
       @port = port
       # response_format: bytes, byte array or hex dump (string representation of bytes)
-      # truncate:  none, :null_bytes, :first_byte_length
+      # length:  number, :remove_nulls, :first_byte
       #
-      @default_command_options = {:response_format => :bytes, :truncate => :first_byte_length}
+      @default_command_options = {:response_format => :bytes, :length => :first_byte}
       @options = @default_command_options.merge(options)
       @default_log_level = :error
-      @response_length = 80
+      @max_response_length = 80
       log_level(@default_log_level)
     end
 
@@ -24,17 +22,17 @@ module Serhexr
       options = @default_command_options.merge(options)
       resp = send_raw_cmd(byte_string)
 
-
-      resp = case options[:truncate]
-      when :none
-        resp
-      when :nullbytes
+      resp = case options[:length]
+      # digit
+      when 1..@max_response_length
+       len = options[:length]
+        resp.chars.first(len).join()
+      when :remove_nulls
         resp.strip
-      when :first_byte_length
+      when :first_byte
         size_by_first_byte(resp)
-      end
-      if options[:truncate] == :nullbytes
-        resp = resp.strip
+      else
+        resp
       end
 
       case options[:response_format]

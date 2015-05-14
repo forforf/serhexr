@@ -7,19 +7,25 @@ describe Port do
   context 'send_cmd' do
     let(:raw_response){ [0x04,0x31,0x32,0x33,0x00,0x00,0x00].pack('C*') }
     let(:sized_response){ [0x31,0x32,0x33,0x00].pack('C*') }
+    let(:fixed_size_response){ [0x04, 0x31,0x32,0x33,0x00].pack('C*')}
     let(:stripped_raw_response){ [0x31,0x32,0x33].pack('C*)') }
     let(:sized_hexdump_response){ "31 32 33 00"}
     let(:port){ Port.new("/dev/blackhole") }
 
 
-    it 'returns length specificied bytes by default' do
+    it 'by default returns length specified in first byte' do
       allow_any_instance_of(Port).to receive(:send_raw_cmd){ raw_response }
       expect( port.send_cmd("abc") ).to eq( sized_response )
     end
 
     it 'can return untruncated bytes' do
       allow_any_instance_of(Port).to receive(:send_raw_cmd){ raw_response }
-      expect( port.send_cmd("abc", :truncate => :none) ).to eq( raw_response )
+      expect( port.send_cmd("abc", :length => nil) ).to eq( raw_response )
+    end
+
+    it 'can return fixed length bytes' do
+      allow_any_instance_of(Port).to receive(:send_raw_cmd){ raw_response }
+      expect( port.send_cmd("abc", :length => 5) ).to eq( fixed_size_response )
     end
 
     it 'can return byte array' do
@@ -35,12 +41,12 @@ describe Port do
 
   context 'set options at initialization' do
     let(:raw_response){ [0x31,0x32,0x33,0x00,0x00,0x00].pack('C*') }
-    let(:untruncated_hexdump_response){ "31 32 33 00 00 00"}
-    let(:port){ Port.new("/dev/blackhole", :response_format => :hexdump, :truncate => :none) }
+    let(:fixed_hexdump_response){ "31 32 33 00 00"}
+    let(:port){ Port.new("/dev/blackhole", :response_format => :hexdump, :length => 5) }
 
     it 'honors them' do
       allow_any_instance_of(Port).to receive(:send_raw_cmd){ raw_response }
-      expect( port.send_cmd("abc") ).to eq( untruncated_hexdump_response )
+      expect( port.send_cmd("abc") ).to eq( fixed_hexdump_response )
     end
   end
 
