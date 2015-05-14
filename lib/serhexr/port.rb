@@ -8,13 +8,15 @@ module Serhexr
 
     def initialize(port, options={})
       @port = port
-      # response_format: bytes, byte array or hex dump (string representation of bytes)
+      # response_format: bytes, byte array or string (string representation of bytes)
       # length:  number, :remove_nulls, :first_byte
       #
       @default_command_options = {:response_format => :bytes, :length => :first_byte}
       @options = @default_command_options.merge(options)
       @default_log_level = :error
-      @max_response_length = 80
+
+      # 64 is the maximum for serhex
+      @max_response_length = 64
       log_level(@default_log_level)
     end
 
@@ -40,7 +42,7 @@ module Serhexr
         resp
       when :array
         resp.chars
-      when :hexdump
+      when :string
         hexdump(resp.chars)
       else #default to raw bytes
         resp

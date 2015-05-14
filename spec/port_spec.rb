@@ -35,14 +35,14 @@ describe Port do
 
     it 'can return a hex string (hexdump)' do
       allow_any_instance_of(Port).to receive(:send_raw_cmd){ raw_response }
-      expect( port.send_cmd("abc", :response_format => :hexdump) ).to eq( sized_hexdump_response )
+      expect( port.send_cmd("abc", :response_format => :string) ).to eq( sized_hexdump_response )
     end
   end
 
   context 'set options at initialization' do
     let(:raw_response){ [0x31,0x32,0x33,0x00,0x00,0x00].pack('C*') }
     let(:fixed_hexdump_response){ "31 32 33 00 00"}
-    let(:port){ Port.new("/dev/blackhole", :response_format => :hexdump, :length => 5) }
+    let(:port){ Port.new("/dev/blackhole", :response_format => :string, :length => 5) }
 
     it 'honors them' do
       allow_any_instance_of(Port).to receive(:send_raw_cmd){ raw_response }
