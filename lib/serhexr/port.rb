@@ -59,7 +59,7 @@ module Serhexr
     private
 
     def send_raw_cmd(byte_string)
-      resp = Array.new(@response_length, 0).pack("C*")
+      resp = Array.new(@max_response_length, 0).pack("C*")
       Serhexr.send_cmd(@port, byte_string, byte_string.size, resp)
       resp
     end
