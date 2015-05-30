@@ -6,99 +6,105 @@ Useful for sending commands in raw hex over a serial port
 
 ### Install
 
+( once it's been pushed to a gem server )
+
     ```
     gem install serhexr
     ```
 
-( once it's been pushed to a gem server )
-
-
+This will build the native extension, but no external libraries are required.
+All native source code is self-contained within the gem.
 
 ### Using `serhexr`
 
-Command format:
+Assume we have a [RadBeacon USB](http://store.radiusnetworks.com/products/radbeacon-usb-2) plugged in
 
-```
-$ serhex <serial port> <bytes to send (in hex)>
-<serial port response (in hex)>
-```
+    ```
+    require 'serhexr'
+    
+    # Feed it the serial port
+    serhex = Serhexr::Port.new('/dev/cu.usbmodem1')
+    
+    # send hex commands and receive hex response
+    raw_byte_response = serhex.send_cmd("\x03")  
+    #=> "\xFE\x10\x03\x00\a\x808H'"
+    ```
+    
+However, it might be nice to the response in a more human readable form:
 
-For example, with a RadBeacon 2.x on a serial port of `/dev/cu.usbmodem1`, the `Ping` command is
+    ```
+    hexdump_response = serhex.send_cmd("\x03", :response_format => :string)
+    #=> "FE 10 03 00 07 80 38 48 27"
+    ```
+    
+You can set the option at instantiation as well
+    ```
+    serhex = Serhexr::Port.new('/dev/cu.usbmodem1', :response_format => :string)
+    hexdump_response = serhex.send_cmd("\x03")
+    #=> "FE 10 03 00 07 80 38 48 27"
+    ```
+    
+#### Serhexr Options
 
-```
-$ serhex /dev/cu.usbmodem1 03
-Response from send_cmd: 08 fe 11 30 30 30 37 38 30
-```
+#### Response Format (`:response_format`)
 
-Some basic RadBeacon Hex commands and responses
+Specify how the response should be formatted
 
-03: Ping - check for connection
+##### `:response_format => :bytes` (Default)
 
-```
-$ bin/serhex 03
-08 fe 11 <data>
-08 - Message length in bytes
-fe - Status (ff is Error)
-10 - Status Code indicating hex data is being returned
-<6 byte device ID>
-```
+Example: `r = s.send_cmd(data, :response_format => :bytes)`  
+Response: `"\x01\x02\x03"`
 
-04: Echo - repy with the data provided
+The response will be in a byte string. This format may not be suitable for display.
 
-```
-$ bin/serhex /dev/cu.usbmodem1 041122334455667788
-0a fe 10 11 22 33 44 55 66 77 88
-0a - Message length in bytes
-fe - Status (ff is Error)
-10 - Status Code indicating hex data is being returned
-1122334455667788 - echoed data
-```
+##### `:response_format => :string`
 
-05: DFU (reset the Dongle so the firmware can be reflashed)
+Example: `r = s.send_cmd(data, :response_format => :string)`  
+Response: `"01 02 03"`
 
-```
-$ bin/serhex /dev/cu.usbmodem1 05
-02 ff 30   (Error)
-02 - Message length in bytes
-ff - Status (ff is Error)
-30 - Status Code: Invalid PIN
-```
+The response will be the bytes in hex, separated by spaces. A good choice if the data should be human readable.
 
-With an invalid pin:
+##### `:response_format => :array`
 
-```
-$ bin/serhex /dev/cu.usbmodem1 0500000000
-02 ff 30   (Error)
-02 - Message length in bytes
-ff - Error
-30 - Invalid PIN
-```
+Example: `r = s.send_cmd(data, :response_format => :array)`  
+Response: `["\x01", "\x02", "0x03]`
 
-With a 4 byte pin of "1234":
+The response will be a byte array.
 
-```
-$ bin/serhex /dev/cu.usbmodem1 05 1234
-02 - Message length in bytes
-fe - Status (ff is Error)
-01 - Status Code: Entered DFU mode
-```
+#### Response Length (`:length`)
 
-Other commands
+Specifies how to set the length of the serial port response
 
-```
-$ serhex /dev/cu.usbmodem1 10[4 byte pin][16 byte UUID] # set UUID
-$ serhex /dev/cu.usbmodem1 11[4 byte pin][2 byte Major Id] # set Major
-$ serhex /dev/cu.usbmodem1 12[4 byte pin][2 byte Minor Id] # set Minor
-$ serhex /dev/cu.usbmodem1 20[4 byte pin][1 byte tx power level 00-0f] # set tx power
-$ serhex /dev/cu.usbmodem1 21[4 byte pin][2 byte advertise interval 0050-0320] # set adv interval
-$ serhex /dev/cu.usbmodem1 30[4 byte pin][24 byte text name] # set friendly name
-$ serhex /dev/cu.usbmodem1 31[4 byte pin]0 # get uuid, major, minor, adv pwr
-$ serhex /dev/cu.usbmodem1 31[4 byte pin]1 # get device model, device id
-$ serhex /dev/cu.usbmodem1 31[4 byte pin]2 # get device name
-$ serhex /dev/cu.usbmodem1 31[4 byte pin]3 # get mac address, adv preamble, tx power, adv interval, lock state (connectable)
-$ serhex /dev/cu.usbmodem1 40[4 byte orig pin][4 byte new pin][4 byte new pin confirm] # change pin
-$ serhex /dev/cu.usbmodem1 41[4 byte pin] # Lock (unable to change params via Bluetooth until reboot)
-```
+###### `:length => :first_byte` (Default)
+
+Example: `r = s.send_cmd(data, :length => :first_byte)`  
+Response: `"\x01\x02\x03"`
+
+After sending a command the first byte returned over the serial port is assumed to be the length of the response.
+This length will be silently consumed to build the actual response. For example:
+
+    ```
+    Raw Serial Port Bytes: [0x03, 0x01, 0x02, 0x03]
+                      length ^^           
+    
+    Serhexr response: "\x01\x02\x03"
+    ```
+    
+###### `:length => <integer>`
+
+Example: `r = s.send_cmd(data, :length => 5)`  
+Response: `"\x01\x02\x03\x00\x00"`
+
+Returns a response of fixed length specified by the integer, up to the maximum buffer size ( currently 64 bytes )
+
+###### `:length => nil`
+
+Example: `r = s.send_cmd(data, :length => nil)`  
+Response: `"\x01\x02\x03\x00\x00 ... \x00"`  
+
+Returns the full buffer ( currrently 64 bytes )
+    
+    
 
 ### Logging
 
